@@ -71,6 +71,7 @@ namespace IdentityAndSerilog.Application.Features.Authentication.UserLogin
             var refreshTokenEntity = new Domain.Models.RefreshTokens
             {
                 TokenHash = HashToken(refreshToken),
+                AccessTokenHash = HashToken(accessToken),
                 UserId = user.Id,
                 CreatedAt = DateTime.UtcNow,
                 ExpiresAt = DateTime.UtcNow.AddDays(_jwtOptions.RefreshTokenExpirationDays)

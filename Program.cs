@@ -28,6 +28,7 @@ builder.Services
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
+
 builder.Services
     .AddOptions<JwtOptions>()
     .Bind(builder.Configuration.GetSection(JwtOptions.SectionName))
@@ -37,9 +38,24 @@ builder.Services
         "JWT Issuer is required.")
     .Validate(options => !string.IsNullOrWhiteSpace(options.Audience),
         "JWT Audience is required.")
+    .Validate(options => options.ExpirationMinutes > 0,
+        "JWT expiration must be greater than 0.")
+    .Validate(options => options.RefreshTokenExpirationDays > 0,
+        "Refresh token expiration must be greater than 0.")
     .ValidateOnStart();
 
-var jwtKey = builder.Configuration["Jwt:Key"]!;
+builder.Services.AddScoped<JwtHelper>();
+
+builder.Services.AddMediatR(config =>
+{
+    config.RegisterServicesFromAssembly(
+        typeof(UserLoginHandler).Assembly);
+});
+
+var jwtOptions = builder.Configuration
+    .GetSection(JwtOptions.SectionName)
+    .Get<JwtOptions>()
+    ?? throw new InvalidOperationException("JWT configuration is missing.");
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -48,15 +64,17 @@ builder.Services
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
+            ValidIssuer = jwtOptions.Issuer,
+
             ValidateAudience = true,
+            ValidAudience = jwtOptions.Audience,
+
             ValidateLifetime = true,
+
             ValidateIssuerSigningKey = true,
 
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-
             IssuerSigningKey =
-                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key))
         };
     });
 

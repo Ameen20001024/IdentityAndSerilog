@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using Azure;
+using MediatR;
 
 namespace IdentityAndSerilog.Application.Features.Authentication.RefreshToken
 {
@@ -8,7 +9,7 @@ namespace IdentityAndSerilog.Application.Features.Authentication.RefreshToken
         {
             app.MapPost("/api/auth/refresh-token",
                 async (
-                    HttpContext httpContext, ISender sender) =>
+                    HttpContext httpContext, ISender sender, HttpResponse response) =>
                 {
                     var accessToken = httpContext.Request.Cookies["access_token"];
 
@@ -27,6 +28,18 @@ namespace IdentityAndSerilog.Application.Features.Authentication.RefreshToken
                     {
                         return Results.BadRequest(result);
                     }
+
+                    var cookieOptions = new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = true,
+                        SameSite = SameSiteMode.None,
+                        Expires = DateTime.UtcNow.AddHours(2)
+                    };
+
+                    response.Cookies.Append("access_token", result.AccessToken, cookieOptions);
+
+                    response.Cookies.Append("refresh_token", result.RefreshToken, cookieOptions);
 
                     return Results.Ok(result);
                 }
