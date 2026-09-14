@@ -3,6 +3,7 @@ using IdentityAndSerilog.Data;
 using IdentityAndSerilog.Domain.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -17,11 +18,11 @@ namespace IdentityAndSerilog.Application.Features.Authentication.RefreshToken
         public RefreshTokenHandler(
             AppDbContext context,
             JwtHelper jwtHelper,
-            JwtOptions jwtOptions)
+            IOptions<JwtOptions> jwtOptions)
         {
             _context = context;
             _jwtHelper = jwtHelper;
-            _jwtOptions = jwtOptions;
+            _jwtOptions = jwtOptions.Value;
         }
 
         public async Task<RefreshTokenResponse> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)

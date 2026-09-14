@@ -8,12 +8,14 @@ namespace IdentityAndSerilog.Data
     public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>
 
     {
-        public AppDbContext(DbContextOptions options) : base(options)
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
+            
         }
 
         public DbSet<RefreshTokens> RefreshTokens { get; set; }
 
+        
         
     }
 }

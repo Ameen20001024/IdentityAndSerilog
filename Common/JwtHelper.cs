@@ -1,4 +1,5 @@
 ﻿using IdentityAndSerilog.Domain.Models;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
@@ -11,9 +12,9 @@ namespace IdentityAndSerilog.Common
     {
         private readonly JwtOptions _JwtOptions;
 
-        public JwtHelper(JwtOptions jwtOptions)
+        public JwtHelper(IOptions<JwtOptions> jwtOptions)
         {
-            _JwtOptions = jwtOptions;
+            _JwtOptions = jwtOptions.Value;
         }
 
         public string GenerateAccessToken(User user)
