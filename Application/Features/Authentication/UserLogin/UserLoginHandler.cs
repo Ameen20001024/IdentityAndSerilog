@@ -1,11 +1,12 @@
 ﻿using IdentityAndSerilog.Common;
 using IdentityAndSerilog.Data;
 using IdentityAndSerilog.Domain.Models;
+using IdentityAndSerilog.Logging;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Serilog;
+//using Serilog;
 
 namespace IdentityAndSerilog.Application.Features.Authentication.UserLogin
 {
@@ -18,7 +19,7 @@ namespace IdentityAndSerilog.Application.Features.Authentication.UserLogin
         private readonly AppDbContext _context;
         private readonly JwtOptions _jwtOptions;
 
-        private readonly Serilog.ILogger _logger;
+        private readonly ILogger<UserLoginHandler> _logger;
 
         public UserLoginHandler(
             UserManager<User> userManager,
@@ -26,14 +27,14 @@ namespace IdentityAndSerilog.Application.Features.Authentication.UserLogin
             JwtHelper jwtHelper,
             AppDbContext context,
             IOptions<JwtOptions> jwtOptions,
-            Serilog.ILogger logger)
+            ILogger<UserLoginHandler> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _jwtHelper = jwtHelper;
             _context = context;
             _jwtOptions = jwtOptions.Value;
-            _logger = Log.ForContext<UserLoginHandler>();
+            _logger = logger;
         }
 
         public async Task<UserLoginResponse> Handle(UserLoginCommand request, CancellationToken cancellationToken)
@@ -43,6 +44,9 @@ namespace IdentityAndSerilog.Application.Features.Authentication.UserLogin
 
             if (user is null)
             {
+                _logger
+                .LogError(new EventId(SecurityEventIds.UnknownUserLoginAttempt, nameof(SecurityEventIds.UnknownUserLoginAttempt)), "User not found. Login attempt for unknown user {Email}", request.Email);
+
                 return new UserLoginResponse(
                     string.Empty,
                     string.Empty,
@@ -59,9 +63,17 @@ namespace IdentityAndSerilog.Application.Features.Authentication.UserLogin
 
             if (!signInResult.Succeeded)
             {
-                _logger
-                .ForSecurity()
-                .Warning("Login failed for user {UserId}: invalid credentials", user.Id);
+                if (signInResult.IsLockedOut)
+                {
+                    _logger.LogWarning(
+                        new EventId(SecurityEventIds.AccountLockedOut, nameof(SecurityEventIds.AccountLockedOut)),
+                        "Account locked out for {UserId} after repeated failed login attempts", user.Id);
+                }
+                else
+                {
+                    _logger
+                    .LogError(new EventId(SecurityEventIds.LoginFailed, nameof(SecurityEventIds.LoginFailed)), "User {UserId} login failed. Invalid password.", user.Id);
+                }
 
 
                 return new UserLoginResponse(
@@ -91,6 +103,9 @@ namespace IdentityAndSerilog.Application.Features.Authentication.UserLogin
             _context.RefreshTokens.Add(refreshTokenEntity);
 
             await _context.SaveChangesAsync(cancellationToken);
+
+            _logger
+                .LogInformation(new EventId(SecurityEventIds.LoginSucceeded, nameof(SecurityEventIds.LoginSucceeded)), "User {UserId} login succeeded", user.Id);
 
             return new UserLoginResponse(
                

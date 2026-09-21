@@ -12,8 +12,32 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Serilog;
+//using Serilog.Formatting.Compact;
 using System.Text;
 
+
+//Log.Logger = new LoggerConfiguration()
+//    .MinimumLevel.Information()
+//    .Enrich.FromLogContext()
+//    //.Enrich.WithMachineName()
+
+//    // General application log — excludes security range (4000-4999)
+//    .WriteTo.Logger(lc => lc
+//        .Filter.ByExcluding(Serilog.Filters.Matching.WithProperty<int>(
+//            "EventId.Id", id => id >= 4000 && id < 5000))
+//        .WriteTo.Console()
+//        .WriteTo.File("logs/app-.log", rollingInterval: RollingInterval.Day))
+
+//    // Security log — only EventIds in the 4000-4999 range
+//    .WriteTo.Logger(lc => lc
+//        .Filter.ByIncludingOnly(Serilog.Filters.Matching.WithProperty<int>(
+//            "EventId.Id", id => id >= 4000 && id < 5000))
+//        .WriteTo.File(
+//            new CompactJsonFormatter(),
+//            "logs/security-.json",
+//            rollingInterval: RollingInterval.Day))
+
+//    .CreateLogger();
 
 Log.Logger = new LoggerConfiguration()
     .ConfigureApplicationLogging()
@@ -23,21 +47,7 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    //builder.Host.UseSerilog((context, services, configuration) =>
-    //{
-    //    configuration
-    //        .ReadFrom.Configuration(context.Configuration)
-    //        .ReadFrom.Services(services)
-    //        .Enrich.FromLogContext()
-    //        .WriteTo.Console()
-    //        .WriteTo.File(
-    //            path: "Logs/app-.log",
-    //            rollingInterval: RollingInterval.Day,
-    //            retainedFileCountLimit: 30,
-    //            fileSizeLimitBytes: 10_000_000,
-    //            rollOnFileSizeLimit: true,
-    //            shared: true);
-    //});
+ 
 
     // Add services to the container.
 
@@ -114,9 +124,9 @@ try
 
     var app = builder.Build();
 
-    Log.ForContext<Program>()
-       .ForSystem()
-       .Information("Application started.");
+    //Log.ForContext<Program>()
+    //   .ForSystem()
+    //   .Information("Application started.");
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
@@ -145,8 +155,7 @@ try
 catch (Exception ex)
 {
     Log.ForContext<Program>()
-   .ForSystem()
-   .Fatal(ex, "Server terminated unexpectedly.");
+    .Fatal(ex, "Server terminated unexpectedly.");
 }
 finally
 {
